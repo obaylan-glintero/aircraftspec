@@ -805,13 +805,43 @@ def main():
 
         st.divider()
         st.subheader("2. Select Images")
-        if not st.session_state['images']:
+        
+        # New: Allow uploading additional photos
+        uploaded_photos = st.file_uploader("Upload Additional Photos", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+        additional_images = []
+        if uploaded_photos:
+            for i, photo in enumerate(uploaded_photos):
+                try:
+                    p_img = Image.open(photo)
+                    # Convert to RGB if needed
+                    if p_img.mode in ("RGBA", "P"): p_img = p_img.convert("RGB")
+                    
+                    b_io = io.BytesIO()
+                    p_img.save(b_io, format="PNG")
+                    img_bytes = b_io.getvalue()
+                    
+                    additional_images.append({
+                        "id": f"uploaded_{i}",
+                        "bytes": img_bytes,
+                        "pil": p_img,
+                        "ext": "png",
+                        "page": 0, # 0 indicates uploaded
+                        "width": p_img.width,
+                        "height": p_img.height
+                    })
+                except Exception as e:
+                    st.error(f"Error loading {photo.name}: {e}")
+
+        # Merge extracted and uploaded
+        extracted_flat = [img for page in st.session_state['images'].values() for img in page]
+        all_images = extracted_flat + additional_images
+
+        if not all_images:
             st.info("No images found.")
         else:
-            flat_imgs = [img for page in st.session_state['images'].values() for img in page]
             selected = []
             cols = st.columns(4)
-            for i, img in enumerate(flat_imgs):
+            for i, img in enumerate(all_images):
                 with cols[i % 4]:
                     st.image(img['pil'], use_container_width=True)
                     suggested = any(p['page'] == img['page'] for p in data.get('imagePages', []))
