@@ -265,88 +265,102 @@ def generate_brochure_pdf(data, selected_images):
     # -------------------------------------------------------------------------
     # 2. PAGE 2: KEY SPECS + ASSET + HIGHLIGHTS
     # -------------------------------------------------------------------------
-    pdf.add_page()
-    pdf.set_auto_page_break(True, margin=15)
-    pdf.set_background()
     
-    # Left Col: Specs
-    pdf.set_y(20)
-    pdf.set_x(15)
-    pdf.set_font(SERIF, 'B', 20)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, "Technical Specifications", 0, 1)
-    pdf.draw_gold_divider(15, pdf.get_y()+2, 120)
-    pdf.ln(8)
-
-    specs = data.get('keySpecs', [])
-    y_start = pdf.get_y()
+    # Check if we have enough data to justify this page
+    has_specs = bool(data.get('keySpecs'))
+    has_desc = bool(data.get('description'))
+    has_highlights = bool(data.get('highlights'))
     
-    if specs:
-        row_height = 22
-        col_width = 60
-        pdf.set_draw_color(50, 50, 50)
-        pdf.set_fill_color(20, 20, 20)
+    if has_specs or has_desc or has_highlights:
+        pdf.add_page()
+        pdf.set_auto_page_break(True, margin=15)
+        pdf.set_background()
         
-        for i, spec in enumerate(specs):
-            x_pos = 15 if i % 2 == 0 else 75
-            y_pos = y_start + (int(i/2) * row_height)
-            
-            if y_pos > 180: break 
-
-            pdf.set_xy(x_pos, y_pos)
-            pdf.rect(x_pos, y_pos, col_width, row_height, 'F')
-            
-            pdf.set_xy(x_pos + 4, y_pos + 4)
-            pdf.set_font(SERIF, '', 7) # Changed to Serif
-            pdf.set_text_color(150, 150, 150)
-            pdf.cell(col_width, 4, safe_text(spec.get('label', '')).upper())
-            
-            pdf.set_xy(x_pos + 4, y_pos + 10)
-            pdf.set_font(SERIF, '', 14)
+        # Left Col: Specs
+        if has_specs:
+            pdf.set_y(20)
+            pdf.set_x(15)
+            pdf.set_font(SERIF, 'B', 20)
             pdf.set_text_color(255, 255, 255)
-            val = safe_text(str(spec.get('value', '')))
-            if pdf.get_string_width(val) > col_width - 8:
-                pdf.set_font(SERIF, '', 11)
-            pdf.cell(col_width, 8, val)
-
-    # Right Col: The Asset & Highlights
-    pdf.set_xy(145, 20)
-    pdf.set_font(SERIF, 'B', 20)
-    pdf.set_text_color(*GOLD)
-    pdf.cell(0, 10, "The Asset", 0, 1)
+            pdf.cell(0, 10, "Technical Specifications", 0, 1)
+            pdf.draw_gold_divider(15, pdf.get_y()+2, 120)
+            pdf.ln(8)
     
-    pdf.set_xy(145, 35)
-    pdf.set_font(SERIF, '', 10) # Changed to Serif
-    pdf.set_text_color(220, 220, 220)
+            specs = data.get('keySpecs', [])
+            y_start = pdf.get_y()
+            
+            if specs:
+                row_height = 22
+                col_width = 60
+                pdf.set_draw_color(50, 50, 50)
+                pdf.set_fill_color(20, 20, 20)
+                
+                for i, spec in enumerate(specs):
+                    x_pos = 15 if i % 2 == 0 else 75
+                    y_pos = y_start + (int(i/2) * row_height)
+                    
+                    if y_pos > 180: break 
     
-    cur_m = pdf.l_margin
-    pdf.set_left_margin(145)
-    pdf.set_right_margin(15)
-    pdf.multi_cell(0, 6, safe_text(data.get('description', '')))
+                    pdf.set_xy(x_pos, y_pos)
+                    pdf.rect(x_pos, y_pos, col_width, row_height, 'F')
+                    
+                    pdf.set_xy(x_pos + 4, y_pos + 4)
+                    pdf.set_font(SERIF, '', 7) # Changed to Serif
+                    pdf.set_text_color(150, 150, 150)
+                    pdf.cell(col_width, 4, safe_text(spec.get('label', '')).upper())
+                    
+                    pdf.set_xy(x_pos + 4, y_pos + 10)
+                    pdf.set_font(SERIF, '', 14)
+                    pdf.set_text_color(255, 255, 255)
+                    val = safe_text(str(spec.get('value', '')))
+                    if pdf.get_string_width(val) > col_width - 8:
+                        pdf.set_font(SERIF, '', 11)
+                    pdf.cell(col_width, 8, val)
     
-    pdf.ln(5)
-    pdf.set_right_margin(10)
-    
-    highlights = data.get('highlights', [])
-    if highlights:
-        SAFE_WIDTH = 132
-        for h in highlights:
-            val = h.get('point', '') if isinstance(h, dict) else str(h)
-            if val:
-                if pdf.get_y() > 185: break
-
+        # Right Col: The Asset & Highlights
+        if has_desc or has_highlights:
+            pdf.set_xy(145, 20)
+            pdf.set_font(SERIF, 'B', 20)
+            pdf.set_text_color(*GOLD)
+            pdf.cell(0, 10, "The Asset", 0, 1)
+            
+            current_y = 35
+            if has_desc:
+                pdf.set_xy(145, current_y)
+                pdf.set_font(SERIF, '', 10) # Changed to Serif
+                pdf.set_text_color(220, 220, 220)
+                
+                cur_m = pdf.l_margin
                 pdf.set_left_margin(145)
-                pdf.set_x(145) 
+                pdf.set_right_margin(15)
+                pdf.multi_cell(0, 6, safe_text(data.get('description', '')))
+                pdf.set_left_margin(cur_m)
                 
-                pdf.set_fill_color(*GOLD)
-                pdf.rect(145, pdf.get_y()+2, 2, 2, 'F')
+                current_y = pdf.get_y() + 5
+            
+            if has_highlights:
+                pdf.set_y(current_y)
+                pdf.set_right_margin(10)
                 
-                pdf.set_x(150) 
-                pdf.set_text_color(200, 200, 200)
-                pdf.multi_cell(SAFE_WIDTH, 6, safe_text(val))
+                highlights = data.get('highlights', [])
+                if highlights:
+                    SAFE_WIDTH = 132
+                    for h in highlights:
+                        val = h.get('point', '') if isinstance(h, dict) else str(h)
+                        if val:
+                            if pdf.get_y() > 185: break
     
-    pdf.set_left_margin(cur_m)
-    pdf.draw_logo()
+                            pdf.set_left_margin(145)
+                            pdf.set_x(145) 
+                            
+                            pdf.set_fill_color(*GOLD)
+                            pdf.rect(145, pdf.get_y()+2, 2, 2, 'F')
+                            
+                            pdf.set_x(150) 
+                            pdf.set_text_color(200, 200, 200)
+                            pdf.multi_cell(SAFE_WIDTH, 6, safe_text(val))
+        
+        pdf.draw_logo()
 
     # -------------------------------------------------------------------------
     # 3. PAGE 3: IMAGE PAGES (GALLERY)
@@ -450,6 +464,12 @@ def generate_brochure_pdf(data, selected_images):
     # Helper for Two-Column Text Blocks
     # -------------------------------------------------------------------------
     def print_dual_column_blocks(sections, title, uppercase_text=False):
+        # Filter out empty sections
+        valid_sections = [(name, content) for name, content in sections if content and str(content).strip()]
+        
+        if not valid_sections:
+            return
+
         pdf.add_page()
         pdf.set_auto_page_break(True, margin=15)
         pdf.set_background()
@@ -560,9 +580,9 @@ def generate_brochure_pdf(data, selected_images):
             return pdf.get_y() + 5
 
         # Distribute sections to left/right
-        mid = (len(sections) + 1) // 2
-        left_sections = sections[:mid]
-        right_sections = sections[mid:]
+        mid = (len(valid_sections) + 1) // 2
+        left_sections = valid_sections[:mid]
+        right_sections = valid_sections[mid:]
         
         y_cursor = pdf.get_y()
         initial_y = y_cursor
@@ -632,19 +652,21 @@ def generate_brochure_pdf(data, selected_images):
     # -------------------------------------------------------------------------
     # 7. PAGE 7: MAINTENANCE STATUS
     # -------------------------------------------------------------------------
-    pdf.add_page()
-    pdf.set_auto_page_break(True, margin=15)
-    pdf.set_background()
-    
-    pdf.set_xy(15, 20)
-    pdf.set_font(SERIF, 'B', 18)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(125, 10, "Maintenance Status", 0, 1)
-    pdf.draw_gold_divider(15, pdf.get_y()+2, 125)
-    pdf.ln(8)
-    
     maint = data.get('maintenanceStatus', [])
-    if maint:
+    # Filter empty maintenance items if any
+    valid_maint = [m for m in maint if m.get('inspection') or m.get('lastPerformed') or m.get('nextDue')]
+    if valid_maint:
+        pdf.add_page()
+        pdf.set_auto_page_break(True, margin=15)
+        pdf.set_background()
+        
+        pdf.set_xy(15, 20)
+        pdf.set_font(SERIF, 'B', 18)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(125, 10, "Maintenance Status", 0, 1)
+        pdf.draw_gold_divider(15, pdf.get_y()+2, 125)
+        pdf.ln(8)
+        
         pdf.set_font(SERIF, 'B', 8) # Serif
         pdf.set_text_color(*GOLD)
         pdf.set_x(15)
@@ -653,7 +675,7 @@ def generate_brochure_pdf(data, selected_images):
         pdf.cell(40, 8, "NEXT", 0, 1)
         pdf.set_font(SERIF, '', 8) # Serif
         pdf.set_text_color(220, 220, 220)
-        for item in maint:
+        for item in valid_maint:
             pdf.set_x(15)
             ins = safe_text(item.get('inspection', ''))
             last = safe_text(item.get('lastPerformed', ''))
@@ -662,7 +684,7 @@ def generate_brochure_pdf(data, selected_images):
             pdf.cell(40, 7, last.upper(), "B")
             pdf.cell(40, 7, nxt.upper(), "B", 1)
             
-    pdf.draw_logo()
+        pdf.draw_logo()
     
     # -------------------------------------------------------------------------
     # 8. PAGE 8: CONFIGURATION (Exterior, Interior)
