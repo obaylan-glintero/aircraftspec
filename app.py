@@ -664,15 +664,36 @@ def generate_brochure_pdf(data, selected_images):
     
     # Centered Contact Info
     pdf.set_y(80)
-    pdf.set_font(SERIF, 'B', 40)
-    pdf.set_text_color(*GOLD)
-    pdf.cell(0, 15, "CONTACT US", 0, 1, 'C')
+    
+    # Replace "CONTACT US" text with Glintero Logo centered
+    possible_logos = ["Glintero Logo White.png", "logo.png", "fonts/logo.png"]
+    logo_path = None
+    for p in possible_logos:
+        if os.path.exists(p):
+            logo_path = p
+            break
+            
+    if logo_path:
+        # Calculate center position for logo
+        # Page width 297. Let's make logo reasonable size, e.g., width 80mm
+        logo_w = 80
+        # Aspect ratio of logo? We let FPDF handle it or just set W
+        x_pos = (297 - logo_w) / 2
+        
+        # Draw logo centered
+        pdf.image(logo_path, x=x_pos, y=60, w=logo_w)
+        
+        # Adjust Y for text below logo
+        pdf.set_y(60 + 25) # Approx height of logo + spacing
+    else:
+        # Fallback if no logo
+        pdf.set_font(SERIF, 'B', 40)
+        pdf.set_text_color(*GOLD)
+        pdf.cell(0, 15, "CONTACT US", 0, 1, 'C')
     
     pdf.ln(10)
-    pdf.set_font(SERIF, '', 16)
-    pdf.set_text_color(255, 255, 255)
     
-    pdf.cell(0, 10, "GLINTERO AVIATION CONSULTANCY", 0, 1, 'C')
+    # Removed "GLINTERO AVIATION CONSULTANCY" text as requested
     
     # Use SANS for contact details for readability, or SERIF if strictly requested.
     # User said: "font used is not playfair display" implies they WANT playfair.
@@ -685,7 +706,7 @@ def generate_brochure_pdf(data, selected_images):
     pdf.cell(0, 8, "PO Box 453440, Dubai, UAE", 0, 1, 'C')
     pdf.cell(0, 8, "www.glintero.com", 0, 1, 'C')
     
-    pdf.draw_logo()
+    # Removed pdf.draw_logo() from this page as requested
 
     return bytes(pdf.output())
 
