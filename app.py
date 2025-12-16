@@ -375,72 +375,33 @@ def generate_brochure_pdf(data, selected_images):
                 tf.write(img['bytes'])
                 tf.close()
                 
-                # Smart Scaling Logic
-                # A4 Landscape in pixels at 72 DPI ~ 842 x 595
-                # FPDF generic unit is mm (297 x 210)
+                # Smart Scaling Logic - Preserve Aspect Ratio Always
+                # A4 Landscape: 297mm x 210mm
+                container_w = 297
+                container_h = 210
                 
                 img_w_px = img.get('width', 800)
                 img_h_px = img.get('height', 600)
                 
-                # If image is reasonably large (e.g. > 1500px width), assumes it's high res enough to fill
-                # If smaller, center it to preserve sharpness
+                # Calculate aspect ratio
+                if img_h_px == 0: aspect = 1.0 # Safety
+                else: aspect = img_w_px / img_h_px
                 
-                if img_w_px > 1500:
-                    # Full Bleed
-                    pdf.image(tf.name, x=0, y=0, w=297, h=210)
-                else:
-                    # Center it
-                    # Convert px to mm approx? No, let FPDF handle aspect ratio
-                    # We want to fit it efficiently without upscaling too much.
-                    # Max width = 297, Max Height = 210
-                    
-                    # If we let FPDF calculate from pixels, at 72dpi, 800px is ~282mm? 
-                    # 800 / 96 * 25.4 = ~211mm. 
-                    # If we specify h=0 or w=0, FPDF uses original DPI or 72/96?
-                    # Safer: Calculate intended display size manually or just restrict Max W/H.
-                    
-                    # Better: define max container
-                    container_w = 297
-                    container_h = 210
-                    
-                    # Aspect Ratio
-                    aspect = img_w_px / img_h_px
-                    
-                    # Candidate 1: Fit Width
-                    disp_w = container_w
-                    disp_h = disp_w / aspect
-                    
-                    # Candidate 2: Fit Height
-                    if disp_h > container_h:
-                        disp_h = container_h
-                        disp_w = disp_h * aspect
-                        
-                    # Now we have 'Fit Page' dimensions.
-                    # BUT, if the source is small, we DON'T want to fit page.
-                    # Check zoom factor.
-                    # 1px approx 0.26mm (at 96 DPI).
-                    native_w_mm = img_w_px * 0.264583
-                    native_h_mm = img_h_px * 0.264583
-                    
-                    # If native size is smaller than screen, use native size (or 1.5x max)
-                    # If native size is bigger, shrink to fit.
-                    
-                    final_w = native_w_mm
-                    final_h = native_h_mm
-                    
-                    if final_w > container_w or final_h > container_h:
-                        # Shrink to fit container
-                         final_w = disp_w
-                         final_h = disp_h
-                    else:
-                        # It fits. Maybe upscale slightly if very small?
-                        pass
-
-                    # Center calculation
-                    pos_x = (container_w - final_w) / 2
-                    pos_y = (container_h - final_h) / 2
-                    
-                    pdf.image(tf.name, x=pos_x, y=pos_y, w=final_w, h=final_h)
+                # Calculate dimensions to fit within container (Contain)
+                # First try fitting to width
+                disp_w = container_w
+                disp_h = disp_w / aspect
+                
+                # If height exceeds container, fit to height instead
+                if disp_h > container_h:
+                    disp_h = container_h
+                    disp_w = disp_h * aspect
+                
+                # Center the image
+                pos_x = (container_w - disp_w) / 2
+                pos_y = (container_h - disp_h) / 2
+                
+                pdf.image(tf.name, x=pos_x, y=pos_y, w=disp_w, h=disp_h)
 
                 os.unlink(tf.name)
             
