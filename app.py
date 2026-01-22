@@ -220,7 +220,7 @@ def parse_pdf_with_gemini(pdf_bytes):
     genai.configure(api_key=api_key)
 
     # Use Gemini 3 Flash for faster processing
-    model_name = "gemini-3-flash"
+    model_name = "gemini-3-flash-preview"
     try:
         model = genai.GenerativeModel(
             model_name,
