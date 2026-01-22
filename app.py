@@ -212,16 +212,32 @@ def extract_images_from_pdf(pdf_bytes):
     return extracted_images
 
 def parse_pdf_with_gemini(pdf_bytes):
+    import time
+
     api_key = st.secrets.get("GEMINI_API_KEY")
     if not api_key: st.error("❌ Missing GEMINI_API_KEY"); return None
 
     genai.configure(api_key=api_key)
-    
-    # STRICT MODEL
-    model_name = "gemini-3-pro-preview"
-    try: model = genai.GenerativeModel(model_name)
-    except: 
-        try: model = genai.GenerativeModel(f"models/{model_name}")
+
+    # Use Gemini 3 Flash for faster processing
+    model_name = "gemini-3-flash"
+    try:
+        model = genai.GenerativeModel(
+            model_name,
+            generation_config={
+                "temperature": 0.1,
+                "top_p": 0.95,
+            }
+        )
+    except:
+        try:
+            model = genai.GenerativeModel(
+                f"models/{model_name}",
+                generation_config={
+                    "temperature": 0.1,
+                    "top_p": 0.95,
+                }
+            )
         except Exception as e: st.error(f"Error loading {model_name}: {e}"); return None
 
     prompt = """
@@ -241,11 +257,36 @@ def parse_pdf_with_gemini(pdf_bytes):
       "imagePages": [ {"page": 1, "category": "hero"} ]
     }
     """
-    try:
-        response = model.generate_content([{'mime_type': 'application/pdf', 'data': pdf_bytes}, prompt])
-        return json.loads(response.text.replace("```json", "").replace("```", "").strip())
-    except Exception as e:
-        st.error(f"AI Error: {e}"); return None
+
+    # Retry logic with exponential backoff
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            if attempt > 0:
+                wait_time = 2 ** attempt  # 2s, 4s, 8s
+                st.info(f"Retry attempt {attempt + 1}/{max_retries} after {wait_time}s...")
+                time.sleep(wait_time)
+
+            response = model.generate_content([{'mime_type': 'application/pdf', 'data': pdf_bytes}, prompt])
+            return json.loads(response.text.replace("```json", "").replace("```", "").strip())
+
+        except Exception as e:
+            error_msg = str(e)
+
+            # Check if it's a timeout/deadline error
+            if "504" in error_msg or "Deadline" in error_msg or "timeout" in error_msg.lower():
+                if attempt < max_retries - 1:
+                    st.warning(f"⏱️ Request timeout. Retrying... (Attempt {attempt + 1}/{max_retries})")
+                    continue
+                else:
+                    st.error(f"❌ AI extraction failed after {max_retries} attempts. The PDF may be too large or complex. Error: {error_msg}")
+                    return None
+            else:
+                # For other errors, don't retry
+                st.error(f"❌ AI Error: {error_msg}")
+                return None
+
+    return None
 
 def generate_brochure_pdf(data, selected_images, variant="full"):
     pdf = PDFGenerator()
@@ -804,7 +845,7 @@ def main():
 
     if st.session_state['pdf_bytes'] and not st.session_state['parsed_data']:
         if st.button("Analyze & Extract"):
-            with st.spinner("Extracting with Gemini 3 Pro Preview..."):
+            with st.spinner("Extracting with Gemini 3 Flash..."):
                 data = parse_pdf_with_gemini(st.session_state['pdf_bytes'])
                 imgs = extract_images_from_pdf(st.session_state['pdf_bytes'])
                 if data:
