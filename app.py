@@ -268,9 +268,40 @@ def generate_brochure_pdf(data, selected_images, variant="full"):
         with tempfile.NamedTemporaryFile(delete=False, suffix=f".{hero_img['ext']}") as tf:
             tf.write(hero_img['bytes'])
             tf.close()
-            pdf.image(tf.name, x=0, y=0, w=297, h=210) 
+
+            # Smart Scaling for Hero Image - Cover behavior (fill page, maintain aspect ratio)
+            # A4 Landscape: 297mm x 210mm
+            container_w = 297
+            container_h = 210
+
+            img_w_px = hero_img.get('width', 1920)
+            img_h_px = hero_img.get('height', 1080)
+
+            # Calculate aspect ratio
+            if img_h_px == 0:
+                aspect = 1.0  # Safety
+            else:
+                aspect = img_w_px / img_h_px
+
+            # Cover behavior: scale to fill entire container
+            container_aspect = container_w / container_h
+
+            if aspect > container_aspect:
+                # Image is wider than container - fit to height
+                disp_h = container_h
+                disp_w = disp_h * aspect
+            else:
+                # Image is taller than container - fit to width
+                disp_w = container_w
+                disp_h = disp_w / aspect
+
+            # Center the image
+            pos_x = (container_w - disp_w) / 2
+            pos_y = (container_h - disp_h) / 2
+
+            pdf.image(tf.name, x=pos_x, y=pos_y, w=disp_w, h=disp_h)
             os.unlink(tf.name)
-            
+
             pdf.set_y(150)
             pdf.set_fill_color(0, 0, 0)
             with pdf.local_context(fill_opacity=0.8):
