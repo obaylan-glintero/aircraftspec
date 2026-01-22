@@ -890,10 +890,18 @@ def main():
         if st.button("GENERATE LANDSCAPE DOSSIER", type="primary"):
             with st.spinner("Compiling PDF..."):
                 pdf_data = generate_brochure_pdf(data, selected, variant=variant)
+
+                # Generate filename based on variant
+                year = data.get('year', 'YEAR').strip()
+                manufacturer = data.get('make', 'MANUFACTURER').strip()
+                model = data.get('model', 'MODEL').strip()
+                suffix = "_Clean" if variant == "clean" else ""
+                file_name = f"{year} {manufacturer} {model}{suffix}.pdf"
+
                 st.download_button(
                     label="Download Dossier",
                     data=pdf_data,
-                    file_name=f"Dossier_{data.get('model', 'Aircraft')}.pdf",
+                    file_name=file_name,
                     mime="application/pdf"
                 )
 
