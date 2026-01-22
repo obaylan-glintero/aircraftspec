@@ -269,7 +269,7 @@ def generate_brochure_pdf(data, selected_images, variant="full"):
             tf.write(hero_img['bytes'])
             tf.close()
 
-            # Smart Scaling for Hero Image - Cover behavior (fill page, maintain aspect ratio)
+            # Smart Scaling for Hero Image - Contain behavior (show full width, maintain aspect ratio)
             # A4 Landscape: 297mm x 210mm
             container_w = 297
             container_h = 210
@@ -283,17 +283,14 @@ def generate_brochure_pdf(data, selected_images, variant="full"):
             else:
                 aspect = img_w_px / img_h_px
 
-            # Cover behavior: scale to fill entire container
-            container_aspect = container_w / container_h
+            # Contain behavior: fit to width to show full image
+            disp_w = container_w
+            disp_h = disp_w / aspect
 
-            if aspect > container_aspect:
-                # Image is wider than container - fit to height
+            # If height exceeds container, fit to height instead
+            if disp_h > container_h:
                 disp_h = container_h
                 disp_w = disp_h * aspect
-            else:
-                # Image is taller than container - fit to width
-                disp_w = container_w
-                disp_h = disp_w / aspect
 
             # Center the image
             pos_x = (container_w - disp_w) / 2
