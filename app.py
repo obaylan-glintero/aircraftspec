@@ -13,13 +13,49 @@ import google.generativeai as genai
 # --- CONFIGURATION ---
 st.set_page_config(page_title="JetSpec Pro", page_icon="✈️", layout="wide")
 
-# UI CSS
+# UI CSS - Responsive to light/dark mode
 st.markdown("""
     <style>
-    .stApp { background-color: #0e0e0e; color: white; }
-    .stButton>button { background-color: #D4AF37; color: black; border: none; font-weight: bold; }
-    div[data-testid="stExpander"] { background-color: #1a1a1a; border: 1px solid #333; }
-    div[data-testid="stDataEditor"] { color: black; }
+    /* Gold button styling that works in both modes */
+    .stButton>button {
+        background-color: #D4AF37;
+        color: #000000;
+        border: none;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #B8941F;
+        box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+    }
+
+    /* Download button styling */
+    .stDownloadButton>button {
+        background-color: #D4AF37;
+        color: #000000;
+        border: none;
+        font-weight: bold;
+    }
+    .stDownloadButton>button:hover {
+        background-color: #B8941F;
+    }
+
+    /* Expander styling - responsive to theme */
+    div[data-testid="stExpander"] {
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        border-radius: 4px;
+    }
+
+    /* Radio button labels */
+    .stRadio > label {
+        font-weight: 500;
+    }
+
+    /* Subheaders */
+    .stApp h3 {
+        color: #D4AF37;
+        font-weight: 600;
+    }
     </style>
     """, unsafe_allow_html=True)
 
