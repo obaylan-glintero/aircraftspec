@@ -211,11 +211,14 @@ def parse_pdf_with_gemini(pdf_bytes):
     except Exception as e:
         st.error(f"AI Error: {e}"); return None
 
-def generate_brochure_pdf(data, selected_images):
+def generate_brochure_pdf(data, selected_images, variant="full"):
     pdf = PDFGenerator()
     GOLD = (212, 175, 55)
     SERIF = pdf.serif_font
     SANS = pdf.sans_font # Only for Tagline
+
+    # Determine whether to show branding based on variant
+    show_branding = (variant == "full")
     
     # -------------------------------------------------------------------------
     # 1. PAGE 1: COVER
@@ -259,8 +262,9 @@ def generate_brochure_pdf(data, selected_images):
     pdf.set_text_color(220, 220, 220)
     sub = f"{data.get('year', '')} | {data.get('make', '')}"
     pdf.cell(0, 10, safe_text(sub).upper(), 0, 1, 'L')
-    
-    pdf.draw_logo()
+
+    if show_branding:
+        pdf.draw_logo()
 
     # -------------------------------------------------------------------------
     # 2. PAGE 2: KEY SPECS + ASSET + HIGHLIGHTS
@@ -359,8 +363,9 @@ def generate_brochure_pdf(data, selected_images):
                             pdf.set_x(150) 
                             pdf.set_text_color(200, 200, 200)
                             pdf.multi_cell(SAFE_WIDTH, 6, safe_text(val))
-        
-        pdf.draw_logo()
+
+        if show_branding:
+            pdf.draw_logo()
 
     # -------------------------------------------------------------------------
     # 3. PAGE 3: IMAGE PAGES (GALLERY)
@@ -418,8 +423,9 @@ def generate_brochure_pdf(data, selected_images):
             pdf.set_font(SERIF, '', 8) # Changed to Serif
             pdf.set_text_color(255, 255, 255)
             pdf.cell(76, 6, safe_text(f"{data.get('model', '')} | VIEW {i+1}").upper(), align='L')
-            
-            pdf.draw_logo()
+
+            if show_branding:
+                pdf.draw_logo()
 
     # -------------------------------------------------------------------------
     # Helper for Two-Column Text Blocks
@@ -551,7 +557,8 @@ def generate_brochure_pdf(data, selected_images):
         for name, content in left_sections:
             if content:
                 if y_cursor > 180:
-                    pdf.draw_logo()
+                    if show_branding:
+                        pdf.draw_logo()
                     pdf.add_page()
                     pdf.set_background()
                     y_cursor = 20
@@ -561,11 +568,12 @@ def generate_brochure_pdf(data, selected_images):
         y_cursor_right = initial_y
         for name, content in right_sections:
             if content:
-                 # Check right column overflow? 
+                 # Check right column overflow?
                  # For simplicity assuming it fits or flows.
                  y_cursor_right = print_block(name, content, RIGHT_COL_X, y_cursor_right)
-                 
-        pdf.draw_logo()
+
+        if show_branding:
+            pdf.draw_logo()
 
     # -------------------------------------------------------------------------
     # 4. PAGE 4: TECH SPECS 2 (Airframe, Engine, APU)
@@ -644,8 +652,9 @@ def generate_brochure_pdf(data, selected_images):
             pdf.cell(45, 7, ins.upper(), "B")
             pdf.cell(40, 7, last.upper(), "B")
             pdf.cell(40, 7, nxt.upper(), "B", 1)
-            
-        pdf.draw_logo()
+
+        if show_branding:
+            pdf.draw_logo()
     
     # -------------------------------------------------------------------------
     # 8. PAGE 8: CONFIGURATION (Exterior, Interior)
@@ -657,56 +666,57 @@ def generate_brochure_pdf(data, selected_images):
     print_dual_column_blocks(config_sections, "Configuration Details")
 
     # -------------------------------------------------------------------------
-    # 9. PAGE 9: CONTACT PAGE
+    # 9. PAGE 9: CONTACT PAGE (Only for full variant)
     # -------------------------------------------------------------------------
-    pdf.add_page()
-    pdf.set_background()
-    
-    # Centered Contact Info
-    pdf.set_y(80)
-    
-    # Replace "CONTACT US" text with Glintero Logo centered
-    possible_logos = ["Glintero Logo White.png", "logo.png", "fonts/logo.png"]
-    logo_path = None
-    for p in possible_logos:
-        if os.path.exists(p):
-            logo_path = p
-            break
-            
-    if logo_path:
-        # Calculate center position for logo
-        # Page width 297. Let's make logo reasonable size, e.g., width 80mm
-        logo_w = 80
-        # Aspect ratio of logo? We let FPDF handle it or just set W
-        x_pos = (297 - logo_w) / 2
-        
-        # Draw logo centered
-        pdf.image(logo_path, x=x_pos, y=60, w=logo_w)
-        
-        # Adjust Y for text below logo
-        pdf.set_y(60 + 25) # Approx height of logo + spacing
-    else:
-        # Fallback if no logo
-        pdf.set_font(SERIF, 'B', 40)
-        pdf.set_text_color(*GOLD)
-        pdf.cell(0, 15, "CONTACT US", 0, 1, 'C')
-    
-    pdf.ln(10)
-    
-    # Removed "GLINTERO AVIATION CONSULTANCY" text as requested
-    
-    # Use SANS for contact details for readability, or SERIF if strictly requested.
-    # User said: "font used is not playfair display" implies they WANT playfair.
-    # "Use a serif font everywhere except the tagline".
-    # So we MUST use SERIF here too.
-    pdf.set_font(SERIF, '', 14) 
-    pdf.set_text_color(200, 200, 200)
-    pdf.cell(0, 8, "glintero@glintero.com", 0, 1, 'C')
-    pdf.cell(0, 8, "+971 4 330 1528", 0, 1, 'C')
-    pdf.cell(0, 8, "PO Box 453440, Dubai, UAE", 0, 1, 'C')
-    pdf.cell(0, 8, "www.glintero.com", 0, 1, 'C')
-    
-    # Removed pdf.draw_logo() from this page as requested
+    if show_branding:
+        pdf.add_page()
+        pdf.set_background()
+
+        # Centered Contact Info
+        pdf.set_y(80)
+
+        # Replace "CONTACT US" text with Glintero Logo centered
+        possible_logos = ["Glintero Logo White.png", "logo.png", "fonts/logo.png"]
+        logo_path = None
+        for p in possible_logos:
+            if os.path.exists(p):
+                logo_path = p
+                break
+
+        if logo_path:
+            # Calculate center position for logo
+            # Page width 297. Let's make logo reasonable size, e.g., width 80mm
+            logo_w = 80
+            # Aspect ratio of logo? We let FPDF handle it or just set W
+            x_pos = (297 - logo_w) / 2
+
+            # Draw logo centered
+            pdf.image(logo_path, x=x_pos, y=60, w=logo_w)
+
+            # Adjust Y for text below logo
+            pdf.set_y(60 + 25) # Approx height of logo + spacing
+        else:
+            # Fallback if no logo
+            pdf.set_font(SERIF, 'B', 40)
+            pdf.set_text_color(*GOLD)
+            pdf.cell(0, 15, "CONTACT US", 0, 1, 'C')
+
+        pdf.ln(10)
+
+        # Removed "GLINTERO AVIATION CONSULTANCY" text as requested
+
+        # Use SANS for contact details for readability, or SERIF if strictly requested.
+        # User said: "font used is not playfair display" implies they WANT playfair.
+        # "Use a serif font everywhere except the tagline".
+        # So we MUST use SERIF here too.
+        pdf.set_font(SERIF, '', 14)
+        pdf.set_text_color(200, 200, 200)
+        pdf.cell(0, 8, "glintero@glintero.com", 0, 1, 'C')
+        pdf.cell(0, 8, "+971 4 330 1528", 0, 1, 'C')
+        pdf.cell(0, 8, "PO Box 453440, Dubai, UAE", 0, 1, 'C')
+        pdf.cell(0, 8, "www.glintero.com", 0, 1, 'C')
+
+        # Removed pdf.draw_logo() from this page as requested
 
     return bytes(pdf.output())
 
@@ -832,9 +842,18 @@ def main():
                         selected.append(img)
 
         st.divider()
+        st.subheader("3. Select Spec Sheet Variant")
+        variant = st.radio(
+            "Choose which version to generate:",
+            options=["full", "clean"],
+            format_func=lambda x: "Full Spec Sheet (with Glintero branding & contact page)" if x == "full" else "Clean Spec Sheet (no logo, no contact page)",
+            index=0
+        )
+
+        st.divider()
         if st.button("GENERATE LANDSCAPE DOSSIER", type="primary"):
             with st.spinner("Compiling PDF..."):
-                pdf_data = generate_brochure_pdf(data, selected)
+                pdf_data = generate_brochure_pdf(data, selected, variant=variant)
                 st.download_button(
                     label="Download Dossier",
                     data=pdf_data,
