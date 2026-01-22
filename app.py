@@ -219,8 +219,8 @@ def parse_pdf_with_gemini(pdf_bytes):
 
     genai.configure(api_key=api_key)
 
-    # STRICT MODEL with timeout configuration
-    model_name = "gemini-3-pro-preview"
+    # Use Gemini 3 Flash for faster processing
+    model_name = "gemini-3-flash"
     try:
         model = genai.GenerativeModel(
             model_name,
@@ -845,7 +845,7 @@ def main():
 
     if st.session_state['pdf_bytes'] and not st.session_state['parsed_data']:
         if st.button("Analyze & Extract"):
-            with st.spinner("Extracting with Gemini 3 Pro Preview..."):
+            with st.spinner("Extracting with Gemini 3 Flash..."):
                 data = parse_pdf_with_gemini(st.session_state['pdf_bytes'])
                 imgs = extract_images_from_pdf(st.session_state['pdf_bytes'])
                 if data:
